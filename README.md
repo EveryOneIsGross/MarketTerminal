@@ -101,7 +101,7 @@ graph TD
    - `F`: Cycle focus between stocks
    - `P`: Change time period
    - `C`: Switch chart types
-   - `M`: Change scroll mode
+   - `M`: Change scroll mode (`spacebar`, `j` and `k` for navigation)
    - `A`: Toggle news awareness mode
    - `S`: Search functionality
    - `Q`: Quit application
@@ -165,9 +165,7 @@ pip install -r requirements.txt
 
 ## Todo :
 
-- Add social media sources
-- Integrate MA Minference stack
-- Enable better panel content management globally for scrolling and content dynamics
-- Add concurrent analysis of multiple stocks and currencies rather than just the current focused one
-- Test on Linux and Mac to ensure the input method is compatible (as it was developed on Windows)*
-- pretty sure 'msvcrt' dependancy will break other platforms
+- Add social media sources (Delphi as embedded twitter agent WIP, just ran out of calls again for the X api again for the month)
+- Integrate MA MinferenceLite stack
+- Add concurrent/async analysis of multiple stocks and currencies rather than just the current focused one
+- Test on Linux and Mac to ensure the input method is compatible (as it was developed on Windows)* pretty sure 'msvcrt' dependancy will break other platforms

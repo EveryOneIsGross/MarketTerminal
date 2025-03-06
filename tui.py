@@ -33,6 +33,40 @@ from fuzzywuzzy import fuzz
 import math
 from pathlib import Path
 
+def load_config():
+    """Load config from config.yaml"""
+    with open('config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    return (
+        config['system_prompt'],  
+        config['market_context_prompt'],  
+        config['model'],
+        config['field_descriptions']
+    )
+
+# Load config at module level
+SYSTEM_PROMPT, MARKET_CONTEXT_PROMPT, MODEL_NAME, FIELD_DESCRIPTIONS = load_config()
+
+class AwarenessConfig(BaseModel):
+    """Configuration for news awareness filtering"""
+    limit: int = Field(default=8, description="Number of news items to include")
+    relevance_threshold: float = Field(default=60.0, description="Minimum relevance score")
+    weights: Dict[str, float] = Field(
+        default={
+            "ticker": 1.0,
+            "name": 0.9,
+            "industry": 0.8,
+            "sector": 0.7
+        }
+    )
+
+class RefreshConfig(BaseModel):
+    """Configuration for all refresh rates and timing intervals"""
+    screen_fps: int = Field(default=4, ge=1, le=60, description="Screen refreshes per second")
+    data_update: int = Field(default=60, ge=10, description="Seconds between market data updates")
+    analysis_throttle: int = Field(default=60, ge=10, description="Minimum seconds between AI analysis")
+    scroll_interval: float = Field(default=1.0, ge=0.1, description="Seconds between auto-scrolls")
+    sentiment_retention: int = Field(default=7, ge=1, description="Days to keep sentiment history")
 
 class MarketSentiment(str, Enum):
     """Market sentiment classifications"""
@@ -53,6 +87,8 @@ class LoadingState(str, Enum):
     READY = "ready"
     LOADING = "loading"
     ERROR = "error"
+
+# GUI visual components
 
 class ASCIIAnimation:
     """Handles loading and display of ASCII art animations with proper centering"""
@@ -160,6 +196,8 @@ class TrendArrows:
         if change_pct < -2: return cls.DOWN
         if change_pct < 0: return cls.SLIGHT_DOWN
         return cls.NEUTRAL
+
+# Analysis logic and components
 
 class SentimentTracker:
     """Tracks weighted rolling sentiment averages with persistence"""
@@ -273,20 +311,6 @@ class SentimentTracker:
         
         return sentiment, confidence, avg_value
 
-def load_config():
-    """Load config from config.yaml"""
-    with open('config.yaml', 'r') as f:
-        config = yaml.safe_load(f)
-    return (
-        config['system_prompt'],  
-        config['market_context_prompt'],  
-        config['model'],
-        config['field_descriptions']
-    )
-
-# Load config at module level
-SYSTEM_PROMPT, MARKET_CONTEXT_PROMPT, MODEL_NAME, FIELD_DESCRIPTIONS = load_config()
-
 class MarketAnalysis(BaseModel):
     __doc__ = f"""Analysis powered by {MODEL_NAME}"""
     summary: str = Field(..., description=FIELD_DESCRIPTIONS['summary'])
@@ -335,26 +359,7 @@ class AnalysisManager:
         except queue.Empty:
             return None
 
-class AwarenessConfig(BaseModel):
-    """Configuration for news awareness filtering"""
-    limit: int = Field(default=8, description="Number of news items to include")
-    relevance_threshold: float = Field(default=60.0, description="Minimum relevance score")
-    weights: Dict[str, float] = Field(
-        default={
-            "ticker": 1.0,
-            "name": 0.9,
-            "industry": 0.8,
-            "sector": 0.7
-        }
-    )
-
-class RefreshConfig(BaseModel):
-    """Configuration for all refresh rates and timing intervals"""
-    screen_fps: int = Field(default=4, ge=1, le=60, description="Screen refreshes per second")
-    data_update: int = Field(default=60, ge=10, description="Seconds between market data updates")
-    analysis_throttle: int = Field(default=60, ge=10, description="Minimum seconds between AI analysis")
-    scroll_interval: float = Field(default=1.0, ge=0.1, description="Seconds between auto-scrolls")
-    sentiment_retention: int = Field(default=7, ge=1, description="Days to keep sentiment history")
+# Main UI class
 
 class FinancialDashboard:
     DEFAULT_PERIOD = '1mo'
@@ -945,9 +950,14 @@ class FinancialDashboard:
         result.append(f"[{t_str}] ", style="yellow")
         result.append(f"{item['title']} ", style="bold")
         
-        content = (item.get('summary')[:128] or 
-                  item.get('description')[:128] or 
-                  item.get('content:encoded')[:128])
+        # Safely handle None values before slicing
+        summary = item.get('summary') or ""
+        description = item.get('description') or ""
+        content_encoded = item.get('content:encoded', "") or ""
+        
+        content = (summary[:128] if summary else 
+                  description[:128] if description else 
+                  content_encoded[:128])
         
         if content:
             result.append(f"{content}", style="dim")
